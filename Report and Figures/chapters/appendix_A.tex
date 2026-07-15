@@ -1,0 +1,116 @@
+\chapter{Supplementary Diagnostic Figures}
+\label{appn:A}
+% Each figure here backs up a specific claim made in the interpretation
+% paragraphs of Chapters 1-4. Image files are in figures/.
+
+This appendix collects diagnostic figures that support the interpretation
+of the results in the main chapters but are not required deliverables.
+
+\section*{Problem A}
+Figure~\ref{fig:appnA_A} backs up two claims from
+Chapter~\ref{ch:problem_A}. Left: the stage-one training loss converges to
+the empirical variance of the $5\%$ observation noise (dashed line), i.e.\
+the state network fits the signal and averages the noise out; the vertical
+line marks the switch to stage two, where the plotted loss becomes the PDE
+residual. Right: the recovered flux $k_{pred}\,u_{pred}'$ lies on top of
+the exact affine flux $-f(x - 1/2)$ obtained by integrating the PDE once --
+the physics is satisfied to high accuracy everywhere, which confirms that
+the remaining error in $k$ stems from the degeneracy at $x = 0.5$ rather
+than from an unsatisfied residual.
+%
+\begin{figure}[ht]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{figures/PA__train_loss_epoch.png}
+        \caption{Training loss vs.\ the noise floor.}
+    \end{subfigure}
+    %
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{figures/PA_flux.png}
+        \caption{Recovered vs.\ exact flux.}
+    \end{subfigure}
+    \caption{Problem A diagnostics: noise-floor convergence and flux consistency.}
+    \label{fig:appnA_A}
+\end{figure}
+
+\section*{Problem B}
+Figure~\ref{fig:appnA_B} localizes the $3.2\%$ error of the Deep Ritz
+solution. Left: overlaying the phase interfaces (white contours) on the
+pointwise error map shows that the error is organized in thin bands along
+the material interfaces, as argued in Chapter~\ref{ch:problem_B}. Right: a
+cross-section at $x_2 = 0.5$ makes the mechanism visible at the level of
+the solution profile -- the reference pressure changes slope where the line
+crosses an inclusion, and the smooth tanh ansatz follows the profile
+closely while rounding off these kinks.
+%
+\begin{figure}[ht]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{figures/PB_err_interfaces.png}
+        \caption{Pointwise error with interfaces overlaid.}
+    \end{subfigure}
+    %
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{figures/PB_crossection.png}
+        \caption{Cross-section at $x_2 = 0.5$.}
+    \end{subfigure}
+    \caption{Problem B diagnostics: the error is concentrated at the phase interfaces.}
+    \label{fig:appnA_B}
+\end{figure}
+
+\section*{Problem C}
+Figure~\ref{fig:appnA_C} characterizes the spread behind the mean test
+error of the FNO. The histogram of the $200$ per-sample relative errors
+shows a compact distribution around the mean rather than a few
+catastrophic outliers, and the worst test sample (shown below the
+histogram) remains qualitatively correct -- its error is elevated but of
+the same character as the average case, concentrated near steep
+conductivity gradients. Together these plots show that the reported mean
+is representative of the operator's behaviour across the test
+distribution.
+%
+\begin{figure}[ht]
+    \centering
+    \begin{subfigure}[b]{0.55\textwidth}
+        \includegraphics[width=\textwidth]{figures/PC_err_hist.png}
+        \caption{Per-sample test error distribution.}
+    \end{subfigure}
+    \\[0.3cm]
+    \begin{subfigure}[b]{0.98\textwidth}
+        \includegraphics[width=\textwidth]{figures/PC_worst_sample.png}
+        \caption{The worst test sample: input, prediction, reference, and pointwise error.}
+    \end{subfigure}
+    \caption{Problem C diagnostics: error distribution and worst-case behaviour.}
+    \label{fig:appnA_C}
+\end{figure}
+
+\section*{Problem D}
+Figure~\ref{fig:appnA_D} complements the space-time colour maps of
+Chapter~\ref{ch:problem_D}. Left: solution profiles at $t = 0$, $0.25$,
+$0.5$, and $1.0$ for the first test instance show that the PI-DeepONet
+tracks the steepening and subsequent viscous decay of the front, with the
+largest (still small) deviations at the steepest profile -- consistent
+with the smooth basis expansion being least efficient there. Right: the
+per-sample error histogram is right-skewed -- the bulk of the $200$ test
+samples lies between $2\%$ and $5\%$ (the median is below the $4.1\%$
+mean), while a small tail of harder samples reaches $10$--$14\%$ and a
+single outlier about $25\%$. The tail samples are the initial conditions
+that develop the steepest fronts, i.e.\ exactly the regime in which the
+smooth DeepONet basis is weakest; this skew also means the mean error
+reported in Chapter~\ref{ch:problem_D} is a conservative summary of the
+typical case.
+%
+\begin{figure}[ht]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{figures/PD_time_slices.png}
+        \caption{Time slices: truth (solid) vs.\ prediction (dashed).}
+    \end{subfigure}
+    %
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{figures/PD_err_hist.png}
+        \caption{Per-sample test error distribution.}
+    \end{subfigure}
+    \caption{Problem D diagnostics: front tracking and error distribution.}
+    \label{fig:appnA_D}
+\end{figure}

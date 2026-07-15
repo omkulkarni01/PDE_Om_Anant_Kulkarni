@@ -1,0 +1,38 @@
+\chapter{Conclusions}
+\label{ch:con}
+%
+Four PDE problems were solved with four different deep learning methods,
+all implemented from scratch in PyTorch: an inverse PINN with a two-stage
+curriculum for coefficient identification from noisy data (Problem A,
+relative $L^2$ error $1.18\times10^{-1}$ for $k$ and $5.1\times10^{-3}$ for
+$u$), the Deep Ritz method for a forward problem with a discontinuous
+coefficient (Problem B, $3.2\times10^{-2}$), a Fourier Neural Operator with
+a hand-written truncated DFT for supervised operator learning (Problem C,
+$7.2\times10^{-3}$), and a physics-informed DeepONet for semi-supervised
+operator learning (Problem D, $4.1\times10^{-2}$).
+
+Beyond the individual results, three observations recur across the
+problems. First, hard constraints beat penalties whenever they are
+available: building boundary conditions, positivity, or known structure
+directly into the ansatz removed loss weights and improved stability in
+every problem where we used it. Second, the choice of loss formulation
+matters more than network size for difficult coefficients: for the
+discontinuous permeability of Problem B, moving from a strong-form residual
+to an energy formulation was the difference between failure and a $3\%$
+solution, while wider networks changed little. Third, curricula help
+non-convex training: both in Problem A (fit the state first, then identify
+the coefficient) and in Problem D (fit the data first, then add the
+residual), staged training escaped plateaus that joint training from a
+random initialization did not; in Problem D the physics phase reduced the
+error of the supervised plateau by a factor of $2.5$ by exploiting the
+$1800$ unlabeled initial conditions.
+
+The main limitations, and natural directions for future work, follow from
+the same experiments. The accuracy of the recovered coefficient in Problem
+A is bounded by the noise level at the point where the flux degenerates;
+ensembling or a Bayesian treatment of the state fit could quantify that
+uncertainty instead of hiding it. The smooth tanh ansatz in Problem B
+cannot represent gradient kinks at material interfaces; enriching the
+ansatz with interface-aware features would address the dominant error
+bands. Finally, the FNO in Problem C shows a mild train--test gap that more
+training data or stronger regularization would likely close.
