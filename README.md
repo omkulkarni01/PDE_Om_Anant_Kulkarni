@@ -1,4 +1,4 @@
-# Deep Learning for PDEs in Engineering Physics — Final Exam Project
+# Deep Learning for PDEs in Engineering Physics (Final Exam Project)
 
 Solutions to the four exam problems of the TUM course *Deep Learning for PDEs in
 Engineering Physics* (Summer 2026). Every deep learning component — network
