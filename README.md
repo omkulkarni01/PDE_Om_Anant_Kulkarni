@@ -107,3 +107,5 @@ The full write-up is in `Om_Anant_Kulkarni_PDE_report.pdf` (methods, losses,
 setups, results and interpretation, plus an appendix with extra diagnostic
 figures). The LaTeX source, based on the official course template, is in
 `Report and Figures/`.
+## Dataset
+> 📥 Dataset download: [https://www.kaggle.com/datasets/yhzang32/dno4pdes](https://www.kaggle.com/datasets/yhzang32/dno4pdes)
