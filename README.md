@@ -1,130 +1,109 @@
-# Deep Learning for PDEs in Engineering Physics (Final Exam Project)
+# Deep Learning for PDEs in Engineering Physics – Final Project
 
-Solutions to the four exam problems of the TUM course *Deep Learning for PDEs in
-Engineering Physics* (Summer 2026). Every deep learning component — network
-architectures, losses, PDE residuals, spectral convolutions, Fourier transforms,
-training/validation loops, checkpointing, inference, and visualization — is
-implemented **from scratch in PyTorch**. No pre-built PDE/deep-learning libraries
-(PINN frameworks, `neuraloperator`, `deepxde`, etc.) are used; the FNO does not
-even use `torch.fft` (see Problem C).
+This repo contains my solutions for the four exam problems of the TUM course
+*Deep Learning for PDEs in Engineering Physics* (Summer 2026).
 
-**Author:** Om Anant Kulkarni
+The course rules do not allow pre-built implementations of PINNs, FNOs, etc.
+from open source packages, so I wrote all of the key parts myself in plain
+PyTorch: the networks, the loss functions, the PDE residuals via autograd, the
+training and validation loops, checkpointing, and the plotting. For Problem C
+this also meant writing the Fourier transform by hand instead of calling
+`torch.fft` (details below).
 
-## Results Overview
+Author: Om Anant Kulkarni
 
-| Problem | Task | Method | Final relative L² error | Training time* |
-|---|---|---|---|---|
-| A | Inverse problem: recover Young's modulus k(x) from noisy displacement data (1D elastostatics) | Inverse PINN, two-stage curriculum | k: 1.18e-1, u: 5.07e-3 | ~2 min |
-| B | Forward Darcy flow with discontinuous permeability (2D, two-phase medium) | Deep Ritz method | 3.21e-2 | ~43 s |
-| C | Operator learning a(x,y) → u(x,y) for heat conduction (1000 labeled pairs) | Fourier Neural Operator (hand-coded DFT) | 7.25e-3 | ~20 min |
-| D | Semi-supervised operator learning for Burgers' equation (200 labeled + 1800 unlabeled ICs) | Physics-Informed DeepONet, two-phase training | 4.08e-2 | ~22 min |
-
-\* on an NVIDIA GeForce RTX 4050 Laptop GPU, Float32, seed 1234.
-
-## Repository Structure
+## What is in here
 
 ```
-.
-├── Problem_A.ipynb                  # Inverse PINN (1D elastostatics)
-├── Problem_B.ipynb                  # Deep Ritz (2D heterogeneous Darcy flow)
-├── Problem_C.ipynb                  # FNO from scratch, no torch.fft (heat conduction surrogate)
-├── Problem_D.ipynb                  # Physics-Informed DeepONet (Burgers traffic flow)
-├── Om_Anant_Kulkarni_PDE_report.pdf # Project report
-├── Report and Figures/              # LaTeX source of the report + all figures
-│   ├── CS_report_template.tex       # Main file (official TUM template)
-│   ├── CS_report.sty
-│   ├── chapters/                    # Problem chapters, conclusions, appendix
-│   └── figures/                     # All result and diagnostic figures (PNG)
-└── README.md
+Problem_A.ipynb                    inverse PINN, 1D elastostatics
+Problem_B.ipynb                    Deep Ritz, 2D Darcy flow with two-phase permeability
+Problem_C.ipynb                    FNO written from scratch, heat conduction surrogate
+Problem_D.ipynb                    physics-informed DeepONet, Burgers equation
+Om_Anant_Kulkarni_PDE_report.pdf   the project report
+Report and Figures/                LaTeX source of the report + all figures
 ```
 
-## Dataset
+The notebooks still contain the outputs of my training runs, so the logs,
+error curves and figures can be inspected without re-running anything.
 
-The datasets are **not** included in this repository. Download them from Kaggle:
-<https://www.kaggle.com/datasets/yhzang32/dno4pdes>
+## Results
 
-and place the four files in an `archive/` folder next to the notebooks:
+All errors are the relative L2 error on the test data, as defined in the
+problem sheet. Timings are from my laptop (RTX 4050, 6 GB, float32, seed 1234).
 
-```
-archive/
-├── ProblemA_dataset.h5
-├── ProblemB_dataset.h5
-├── ProblemC_dataset.h5
-└── ProblemD_dataset.h5
-```
+| Problem | Method | Final test error | Time |
+|---|---|---|---|
+| A | inverse PINN (two training stages) | k: 1.18e-1, u: 5.07e-3 | ~2 min |
+| B | Deep Ritz | 3.21e-2 | ~43 s |
+| C | FNO (hand-written DFT) | 7.25e-3 | ~20 min |
+| D | PI-DeepONet (two training phases) | 4.08e-2 | ~22 min |
 
-(Each notebook reads `archive/Problem*_dataset.h5`; adjust `DATA_PATH` in the
-first code cell if you store them elsewhere.)
+## Running the notebooks
 
-## How to Run
-
-Requirements: Python ≥ 3.10 with
+You need Python 3.10+ and:
 
 ```
 pip install torch numpy h5py matplotlib tqdm
 ```
 
-Each notebook is fully self-contained: open it and **Run All**. A CUDA GPU is
-used automatically if available (`device = 'cuda:0' if ... else 'cpu'`);
-everything also runs on CPU, just slower. Checkpoints and training histories
-are written to `checkpoints/problemX/`, and every figure is also saved to
-`figures/` as a 200-dpi PNG. All runs are seeded (`numpy` + `torch`, seed 1234).
+The datasets are not in the repo (they are large). Get them from
+https://www.kaggle.com/datasets/yhzang32/dno4pdes and put the four h5 files
+into a folder called `archive/` next to the notebooks. If you keep them
+somewhere else, change `DATA_PATH` in the first code cell.
 
-Each notebook follows the same layout: problem statement → method description
-and justification → data loading → network classes → loss classes → training
-loop (with per-epoch L² relative test error and best-loss checkpointing) →
-error-vs-epoch curve → inference from the best checkpoint with all required
-figures → setup summary table.
+Then just open a notebook and run all cells. CUDA is used when available,
+otherwise everything falls back to CPU (slower but works). Checkpoints and the
+error histories go to `checkpoints/`, figures are additionally saved as PNGs
+into `figures/`. Seeds are fixed, so reruns should give the same numbers up to
+GPU nondeterminism.
 
-## Method Summaries
+## Short notes on the methods
 
-### Problem A — Inverse PINN with a two-stage curriculum
-Two MLPs approximate the displacement u(x) and the modulus k(x). Hard
-constraints encode the physics exactly: `u = x(L−x)·N(x)` (boundary conditions)
-and `k = softplus(N(x))` (positivity — which is also what makes the inverse
-problem identifiable through the flux relation `k·u' = −fx + C`). Joint training
-stalls in a local minimum where k stays constant, so training is staged:
-(1) fit u to the 500 noisy sensors until the data loss reaches the noise floor,
-(2) freeze u and recover k from the autodiff PDE residual plus a Tikhonov
-smoothness penalty. The remaining k-error concentrates at x = 0.5, where the
-flux degenerates and the noise bounds the attainable accuracy.
+**Problem A.** Two small MLPs, one for the displacement u and one for the
+modulus k. The boundary conditions are built into the ansatz (u = x(L-x)*N(x))
+and k goes through a softplus, which keeps it positive. The positivity is
+actually needed for uniqueness here, not just for looks: integrating the PDE
+once gives k u' = -fx + C, and only the positive branch pins down C. Training
+both networks jointly got stuck with k almost constant, so I train in two
+stages: first fit u to the noisy sensors (the data loss ends up exactly at the
+noise variance), then freeze u and fit k from the PDE residual with a small
+smoothness penalty. The leftover error in k sits around x = 0.5 where u' = 0
+and the data simply does not contain much information about k.
 
-### Problem B — Deep Ritz method
-The piecewise-constant permeability (values 2 / 10 on a 128×128 pixel image)
-rules out strong-form PINNs (∇μ is undefined at the interfaces). The Darcy
-problem is symmetric elliptic, so the solution minimizes the energy
-E(u) = ∫ μ/2 |∇u|² dx, which only *evaluates* μ and only needs first
-derivatives of u. The Dirichlet data (u = 1−x₁ on all four edges) is built into
-the ansatz `u = (1−x₁) + x₁(1−x₁)x₂(1−x₂)·N(x)`, so there are no boundary
-penalties and no loss weights at all. The Monte-Carlo energy uses stratified
-sampling (one jittered point per pixel per epoch). A weak-form ParticleWNN was
-also prototyped and rejected: its ball quadrature interacts badly with the
-pixelated interfaces (training loss decreases while the true error grows).
+**Problem B.** The permeability is piecewise constant, so a normal strong-form
+PINN would have to differentiate it, which makes no sense at the interfaces.
+The Deep Ritz method avoids this: minimize the energy integral mu/2 |grad u|^2,
+where mu is only evaluated. The boundary condition u = 1 - x1 holds on all four
+edges, so I put it directly into the ansatz and there are no loss weights left
+to tune. For the integral I sample one jittered point per pixel per epoch
+instead of plain uniform sampling, which removes most of the Monte Carlo noise.
+I first tried ParticleWNN for this problem; it looked fine on paper but the
+quadrature over the small balls breaks down at the pixelated interfaces (the
+loss kept going down while the actual error went up), so I dropped it.
 
-### Problem C — Fourier Neural Operator, DFT written by hand
-Standard FNO layout (lifting → 4 spectral-convolution layers with 1×1-conv skip
-paths and GELU → projection), trained with a per-sample relative-L² loss on the
-1000 labeled pairs. Since pre-built FFTs are not allowed, the truncated 2D
-Fourier transform is implemented from its definition: partial DFT matrices
-F_kn = exp(−2πikn/S) for the 2·12 kept modes per dimension, applied as matrix
-products (cost O(2mS) per 1D transform, exact — verified in-notebook against
-the direct DFT summation and the inverse round-trip identity). Complex mode
-weights are stored as separate real/imaginary parameter tensors.
+**Problem C.** Standard FNO structure: lifting, four spectral conv layers with
+1x1 conv skip connections and GELU, projection. Trained on the 1000 pairs with
+a per-sample relative L2 loss. Since FFT routines were not allowed, I build
+the truncated DFT matrices from the definition (only the 12 lowest positive
+and negative modes per dimension are ever needed) and apply the transform as
+two matrix multiplications. The notebook checks these matrices against the
+direct DFT sum and the inverse round trip before training. The complex mode
+weights are stored as separate real and imaginary tensors.
 
-### Problem D — Physics-Informed DeepONet
-The operator is `u(a)(x,t) = (1−x²) Σₖ bₖ(a)·τₖ(x,t) + b₀` with a branch net
-encoding the initial condition at 256 sensors and a trunk net taking continuous
-(x,t) — so the Burgers residual `u_t + u·u_x − ν·u_xx` is available by exact
-automatic differentiation and can be imposed on the **1800 unlabeled** initial
-conditions (plus an IC loss), while the 200 labeled ones give a supervised
-loss. The (1−x²) factor enforces the boundary conditions exactly. Training is
-two-phase (cheap data+IC warm-up, then physics fine-tuning): the supervised
-phase plateaus at 10.1% test error, and the physics phase lowers it to 4.1% —
-a factor 2.5 gained purely from unlabeled data.
+**Problem D.** Only 200 of the 2000 initial conditions come with solutions, so
+a purely data-driven model would throw away 90% of the data. A DeepONet with a
+trunk net taking continuous (x,t) lets me put the Burgers residual (via
+autograd) and the initial condition on the 1800 unlabeled samples as extra
+loss terms. The factor (1-x^2) in front of the output enforces the boundary
+conditions exactly. Training runs in two phases because a residual epoch is
+roughly 40x more expensive than a data epoch: first a cheap warm-up on data +
+IC loss, then the full physics loss with a smaller learning rate. The warm-up
+alone plateaus at about 10% test error, the physics phase brings it down to
+4.1%, which is the main point of the exercise.
 
 ## Report
 
-`Om_Anant_Kulkarni_PDE_report.pdf` contains the full write-up (method selection
-and justification, loss functions, architectures, experiment setups, results,
-interpretation, and diagnostic appendix figures). The LaTeX source, based on
-the official course template, is in `Report and Figures/`.
+The full write-up is in `Om_Anant_Kulkarni_PDE_report.pdf` (methods, losses,
+setups, results and interpretation, plus an appendix with extra diagnostic
+figures). The LaTeX source, based on the official course template, is in
+`Report and Figures/`.
